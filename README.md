@@ -26,10 +26,10 @@ An interactive, automated bootstrap script designed for Debian-based Linux distr
 You can download and execute the script directly on your target host using Python 3:
 
 ```bash
-wget -qO- https://github.com/Michdo93/Icinga2-NRPE-Universal-Bootstrap-Kit/install-nrpe.py | sudo python3
+wget -qO- https://raw.githubusercontent.com/Michdo93/Icinga2-NRPE-Universal-Bootstrap-Kit/main/install.sh | sh
 ```
 
-*(Alternatively, clone the repository and run `sudo python3 install-nrpe.py` locally).*
+*(Alternatively, clone the repository and run `./install.sh` locally).*
 
 ---
 
