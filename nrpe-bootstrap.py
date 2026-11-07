@@ -5,22 +5,16 @@ import subprocess
 import shutil
 import re
 
-# Colors for terminal output
 GREEN = "\033[0;32m"
 RED = "\033[0;31m"
 YELLOW = "\033[1;33m"
-NC = "\033[0m"  # No Color
+NC = "\033[0m"
 
 def print_banner():
     print(f"{GREEN}======================================================{NC}")
     print(f"{GREEN}      Icinga2 NRPE Universal Bootstrap Kit            {NC}")
     print(f"{GREEN}======================================================{NC}")
     print("Supports: Ubuntu, Debian, Kali Linux, DietPi, Raspberry Pi OS\n")
-
-def check_root():
-    if os.geteuid() != 0:
-        print(f"{RED}Error: This script must be run as root (sudo python3 install-nrpe.py){NC}")
-        sys.exit(1)
 
 def check_os():
     if not os.path.exists("/etc/os-release"):
@@ -43,7 +37,10 @@ def check_os():
 def prompt_yes_no(question, default="y"):
     default_str = "Y/n" if default.lower() == "y" else "y/N"
     while True:
-        choice = input(f"{question} [{default_str}]: ").strip().lower()
+        try:
+            choice = input(f"{question} [{default_str}]: ").strip().lower()
+        except EOFError:
+            choice = default
         if not choice:
             choice = default
         if choice in ["y", "yes"]:
@@ -55,7 +52,6 @@ def prompt_yes_no(question, default="y"):
 def scan_listening_ports():
     ports = []
     try:
-        # Run 'ss' to find listening TCP ports
         result = subprocess.run(["ss", "-tulpn", "state", "listening"], capture_output=True, text=True, check=True)
         for line in result.stdout.splitlines():
             if "127.0.0.1" in line or "0.0.0.0" in line or "[::]" in line:
@@ -66,7 +62,6 @@ def scan_listening_ports():
                     if port_match:
                         port = port_match.group(1)
                         if int(port) < 65535 and port not in [str(p['port']) for p in ports]:
-                            # Try to extract process name
                             proc_match = re.search(r'users:\(\("([^"]+)"', line)
                             proc_name = proc_match.group(1) if proc_match else "unknown"
                             ports.append({"port": port, "process": proc_name})
@@ -90,7 +85,6 @@ def scan_active_services():
     return services
 
 def main():
-    check_root()
     print_banner()
     check_os()
 
@@ -115,19 +109,15 @@ def main():
     nrpe_conf = "/etc/nagios/nrpe.cfg"
     print(f"{GREEN}>> Configuring NRPE in {nrpe_conf}...{NC}")
 
-    # Read and update allowed_hosts and dont_blame_nagios
     with open(nrpe_conf, "r") as f:
         content = f.read()
 
-    # Update allowed_hosts
     content = re.sub(r'^allowed_hosts=.*$', f'allowed_hosts=127.0.0.1, ::1, {master_ip}', content, flags=re.MULTILINE)
-    # Enable argument passing (dont_blame_nagios)
     content = re.sub(r'^dont_blame_nagios=.*$', 'dont_blame_nagios=1', content, flags=re.MULTILINE)
 
     with open(nrpe_conf, "w") as f:
         f.write(content)
 
-    # Append custom commands
     custom_commands = "\n\n# --- Automatically Added Bootstrap Checks ---\n"
 
     if setup_defaults:
@@ -162,7 +152,7 @@ def main():
 
     print(f"{GREEN}>> Restarting NRPE service...{NC}")
     subprocess.run(["systemctl", "enable", "nagios-nrpe-server"], check=True)
-    subprocess.run(["systemctl", "restart", "nagios-nrpe-server"], check=True)
+    subprocess.run(["systemctl, restart", "nagios-nrpe-server"], check=True)
 
     print(f"\n{GREEN}=== Installation & Configuration Successfully Completed! ==={NC}")
     print(f"NRPE is running and authorized for Icinga Master: {YELLOW}{master_ip}{NC}")
